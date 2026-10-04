@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لرزش‌سنج میز</title>
+<style>
+  body { font-family: system-ui; background:#0e0e10; color:#eee;
+         text-align:center; padding:20px; margin:0; }
+  #count { font-size: 120px; font-weight: bold; color:#22d3ee; margin:20px 0; }
+  #count.hit { color:#f43f5e; }
+  #status { color:#888; min-height:24px; }
+  button { padding:14px 28px; font-size:16px; border-radius:12px;
+           border:none; background:#4f46e5; color:#fff; cursor:pointer;
+           margin-top:12px; }
+  #bar { width:80%; max-width:400px; height:10px; background:#222;
+         border-radius:5px; margin:16px auto; overflow:hidden; }
+  #barFill { height:100%; width:0%; background:#22d3ee; transition:width 0.05s; }
+  .row { display:flex; gap:14px; justify-content:center; margin-top:16px; flex-wrap:wrap; }
+  label { font-size:13px; color:#aaa; display:flex; flex-direction:column;
+          gap:6px; align-items:center; }
+  input[type=range] { width:140px; }
+</style>
+</head>
+<body>
+  <h2>لرزش‌سنج میز 📳</h2>
+  <div id="count">0</div>
+  <div id="bar"><div id="barFill"></div></div>
+  <div id="status">دکمه رو بزن و گوشی رو روی میز بذار</div>
+  <button id="startBtn">شروع</button>
+
+  <div class="row">
+    <label>حساسیت
+      <input type="range" id="sens" min="1" max="10" value="5">
+    </label>
+    <label>فاصله بین ضربه (ms)
+      <input type="range" id="cool" min="100" max="800" value="250">
+    </label>
+  </div>
+
+<script>
+const countEl = document.getElementById('count');
+const statusEl = document.getElementById('status');
+const barFill = document.getElementById('barFill');
+const btn = document.getElementById('startBtn');
+
+let count = 0;
+let lastHit = 0;
+let running = false;
+let baseAccel = 0;         // شتاب پایه (ثابت گرانش)
+let calibrating = true;
+
+btn.onclick = async () => {
+  if (running) return;
+
+  // iOS 13+ نیاز به اجازه کاربر داره
+  if (typeof DeviceMotionEvent !== 'undefined' &&
+      typeof DeviceMotionEvent.requestPermission === 'function') {
+    const perm = await DeviceMotionEvent.requestPermission();
+    if (perm !== 'granted') {
+      statusEl.textContent = 'اجازه دسترسی داده نشد';
+      return;
+    }
+  }
+
+  running = true;
+  calibrating = true;
+  btn.textContent = 'در حال گوش دادن...';
+  statusEl.textContent = 'گوشی رو روی میز بذار، ۲ ثانیه صبر کن';
+
+  // کالیبراسیون: ۲ ثانیه نویز پایه رو یاد بگیره
+  setTimeout(() => {
+    calibrating = false;
+    statusEl.textContent = 'آماده‌ست! میز رو بلرزون';
+  }, 2000);
+
+  window.addEventListener('devicemotion', onMotion);
+};
+
+function onMotion(e) {
+  if (!running) return;
+
+  const a = e.accelerationIncludingGravity;
+  if (!a) return;
+
+  // اندازه شتاب کل (بدون گرانش خالص)
+  const magnitude = Math.sqrt((a.x||0)**2 + (a.y||0)**2 + (a.z||0)**2);
+
+  // گرانش حدود 9.8 هست، پس هر چی از این فاصله بگیره = حرکت
+  const delta = Math.abs(magnitude - 9.8);
+
+  // ذخیره نویز پایه در مرحله کالیبراسیون
+  if (calibrating) {
+    baseAccel = baseAccel * 0.9 + delta * 0.1;
+    return;
+  }
+
+  // حساسیت: از 1 تا 10
+  const sens = +document.getElementById('sens').value;
+  // آستانه از ~3.5 (حساس کم) تا ~0.4 (حساس زیاد)
+  const threshold = 3.5 - (sens - 1) * 0.35;
+
+  const pct = Math.min(100, (delta / (threshold * 2)) * 100);
+  barFill.style.width = pct + '%';
+  barFill.style.background = delta > threshold ? '#f43f5e' : '#22d3ee';
+
+  const now = performance.now();
+  const cooldown = +document.getElementById('cool').value;
+
+  if (delta > threshold && now - lastHit > cooldown) {
+    lastHit = now;
+    count++;
+    countEl.textContent = count;
+    countEl.classList.add('hit');
+    setTimeout(() => countEl.classList.remove('hit'), 150);
+    if (navigator.vibrate) navigator.vibrate(40);
+  }
+}
+</script>
+</body>
+</html>
