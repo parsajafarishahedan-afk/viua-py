@@ -40,7 +40,7 @@ def find_free_port(start_port=8000, max_tries=20):
     """پیدا کردن پورت آزاد اگر پورت پیش‌فرض اشغال باشد"""
     for port in range(start_port, start_port + max_tries):
         try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sgit add .:
                 s.bind(("", port))
                 return port
         except OSError:

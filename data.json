@@ -1,0 +1,18 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "parsa",
+      "email": "parsa",
+      "password_hash": "23e59122b57649a09e4d697428e59c77:6338f64a00fb38ae07ba6201101232674a1f8b4d19c1d459bab79242a63e3306",
+      "full_name": "parsa",
+      "phone": "",
+      "created_at": "2026-10-07T11:12:58.129066"
+    }
+  ],
+  "accounts": [],
+  "transactions": [],
+  "nextUserId": 2,
+  "nextAccountId": 3,
+  "nextTxId": 54
+}
